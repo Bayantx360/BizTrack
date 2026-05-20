@@ -471,7 +471,13 @@ def page_record_sale():
                             if not pr.empty:
                                 current   = safe_float(pr.iloc[0]["stock_quantity"])
                                 deduct    = safe_float(item.get("stock_deduct", item["quantity"]))
-                                new_stock = max(0, round(current - deduct, 4))
+                                new_stock = round(current - deduct, 4)
+                                # Keep as float only if product has sub-unit splitting
+                                upp = safe_int(pr.iloc[0].get("units_per_pack", 1)) or 1
+                                if upp <= 1:
+                                    new_stock = int(max(0, new_stock))
+                                else:
+                                    new_stock = max(0.0, new_stock)
                                 db_update(TBL_PRODUCTS, "product_id", item["product_id"],
                                           {"stock_quantity": new_stock})
 
