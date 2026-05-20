@@ -465,28 +465,41 @@ def page_record_sale():
                             "cost_total":   item["cost_total"],
                             "gross_profit": item["gross_profit"],
                         })
-                    # Deduct stock — bypass cache to get real-time stock values
-                    st.cache_data.clear()
+                    # Deduct stock — direct Supabase call, no cache, no abstraction
+                    sb = get_supabase()
                     for item in cart:
                         try:
-                            sb       = get_supabase()
-                            res      = sb.table(TBL_PRODUCTS).select(
+                            # Step 1: read current live stock directly
+                            res = sb.table(TBL_PRODUCTS).select(
                                 "product_id,stock_quantity,units_per_pack"
                             ).eq("product_id", item["product_id"]).execute()
-                            if res.data:
-                                pr_row    = res.data[0]
-                                current   = safe_float(pr_row["stock_quantity"])
-                                deduct    = safe_float(item.get("stock_deduct", item["quantity"]))
-                                new_stock = round(current - deduct, 4)
-                                upp       = safe_int(pr_row.get("units_per_pack", 1)) or 1
-                                if upp <= 1:
-                                    new_stock = int(max(0, new_stock))
-                                else:
-                                    new_stock = max(0.0, new_stock)
-                                db_update(TBL_PRODUCTS, "product_id", item["product_id"],
-                                          {"stock_quantity": new_stock})
+
+                            if not res.data:
+                                st.warning(f"⚠️ Product not found: {item['product_name']}")
+                                continue
+
+                            pr_row    = res.data[0]
+                            current   = safe_float(pr_row.get("stock_quantity", 0))
+                            deduct    = safe_float(item.get("stock_deduct", item["quantity"]))
+                            upp       = safe_int(pr_row.get("units_per_pack", 1)) or 1
+
+                            # Step 2: calculate new stock
+                            new_stock = current - deduct
+                            if upp <= 1:
+                                new_stock = int(max(0, round(new_stock)))
+                            else:
+                                new_stock = max(0.0, round(new_stock, 4))
+
+                            # Step 3: write directly to Supabase — no wrapper
+                            sb.table(TBL_PRODUCTS).update(
+                                {"stock_quantity": new_stock}
+                            ).eq("product_id", item["product_id"]).execute()
+
                         except Exception as e:
                             st.warning(f"⚠️ Stock deduction failed for {item['product_name']}: {e}")
+
+                    # Clear cache after all deductions so next page load shows fresh stock
+                    st.cache_data.clear()
 
                     st.session_state.sale_done = {
                         "sale_id":       sale_id,
