@@ -193,10 +193,17 @@ def get_products_df(business_id: str) -> pd.DataFrame:
     df = db_fetch(TBL_PRODUCTS, {"business_id": business_id})
     if df.empty:
         return pd.DataFrame()
-    df["selling_price"]  = pd.to_numeric(df["selling_price"],  errors="coerce").fillna(0)
-    df["cost_price"]     = pd.to_numeric(df["cost_price"],     errors="coerce").fillna(0)
-    df["stock_quantity"] = pd.to_numeric(df["stock_quantity"], errors="coerce").fillna(0)
-    df["reorder_level"]  = pd.to_numeric(df["reorder_level"],  errors="coerce").fillna(0)
+    df["selling_price"]     = pd.to_numeric(df["selling_price"],     errors="coerce").fillna(0)
+    df["cost_price"]        = pd.to_numeric(df["cost_price"],        errors="coerce").fillna(0)
+    df["stock_quantity"]    = pd.to_numeric(df["stock_quantity"],    errors="coerce").fillna(0)
+    df["reorder_level"]     = pd.to_numeric(df["reorder_level"],     errors="coerce").fillna(0)
+    df["units_per_pack"]    = pd.to_numeric(df.get("units_per_pack", 1),    errors="coerce").fillna(1).astype(int)
+    df["selling_price_sub"] = pd.to_numeric(df.get("selling_price_sub", 0), errors="coerce").fillna(0)
+    # Ensure unit columns exist with safe defaults
+    if "base_unit" not in df.columns: df["base_unit"] = "unit"
+    if "sub_unit"  not in df.columns: df["sub_unit"]  = "unit"
+    df["base_unit"] = df["base_unit"].fillna("unit")
+    df["sub_unit"]  = df["sub_unit"].fillna("unit")
     return df
 
 

@@ -103,12 +103,25 @@ def page_products():
                     ec1, ec2, ec3 = st.columns(3)
                     with ec1:
                         st.markdown(f"**Cost Price:** {fmt_naira(row['cost_price'])}")
-                        st.markdown(f"**Selling Price:** {fmt_naira(row['selling_price'])}")
+                        st.markdown(f"**Selling Price (per {row.get('base_unit','unit')}):** {fmt_naira(row['selling_price'])}")
+                        upp = safe_int(row.get('units_per_pack', 1))
+                        if upp > 1:
+                            sub_price = safe_float(row.get('selling_price_sub', 0))
+                            st.markdown(f"**Selling Price (per {row.get('sub_unit','unit')}):** {fmt_naira(sub_price)}")
                         margin = safe_float(row["selling_price"]) - safe_float(row["cost_price"])
                         st.markdown(f"**Margin/unit:** {fmt_naira(margin)}")
                     with ec2:
-                        st.markdown(f"**Stock:** {int(row['stock_quantity'])} units")
-                        st.markdown(f"**Reorder Level:** {int(row['reorder_level'])} units")
+                        upp = safe_int(row.get('units_per_pack', 1))
+                        base = row.get('base_unit','unit')
+                        sub  = row.get('sub_unit','unit')
+                        stock_display = (
+                            f"{int(row['stock_quantity'])} {base}s"
+                            if upp <= 1 else
+                            f"{int(row['stock_quantity'])} {base}s ({int(row['stock_quantity']) * upp} {sub}s)"
+                        )
+                        st.markdown(f"**Stock:** {stock_display}")
+                        st.markdown(f"**Pack size:** {upp} {sub}s per {base}" if upp > 1 else f"**Unit:** {base}")
+                        st.markdown(f"**Reorder Level:** {int(row['reorder_level'])} {base}s")
                         st.markdown(f"**Category:** {row['category']}")
                     with ec3:
                         st.markdown(stock_pill(row["stock_quantity"], row["reorder_level"]),
@@ -116,22 +129,44 @@ def page_products():
 
                     with st.form(f"edit_{row['product_id']}"):
                         st.markdown("**Edit Product**")
-                        f1, f2   = st.columns(2)
-                        new_name = f1.text_input("Product Name",   value=row["product_name"])
-                        new_cat  = f2.text_input("Category",       value=row["category"])
-                        new_cost = f1.number_input("Cost Price",   value=safe_float(row["cost_price"]),
-                                                   min_value=0.0, step=50.0)
-                        new_sell = f2.number_input("Selling Price", value=safe_float(row["selling_price"]),
-                                                   min_value=0.0, step=50.0)
+                        f1, f2      = st.columns(2)
+                        new_name    = f1.text_input("Product Name",    value=row["product_name"])
+                        new_cat     = f2.text_input("Category",        value=row["category"])
+                        new_cost    = f1.number_input("Cost Price",    value=safe_float(row["cost_price"]),
+                                                      min_value=0.0, step=50.0)
+                        new_sell    = f2.number_input(
+                            f"Selling Price (per {row.get('base_unit','unit')})",
+                            value=safe_float(row["selling_price"]), min_value=0.0, step=50.0,
+                        )
                         new_reorder = f1.number_input("Reorder Level", value=safe_int(row["reorder_level"]),
                                                       min_value=0, step=1)
+                        new_upp     = f2.number_input(
+                            "Units per Pack (1 = no splitting)",
+                            value=safe_int(row.get("units_per_pack", 1)), min_value=1, step=1,
+                        )
+                        new_base    = f1.text_input("Base Unit",  value=row.get("base_unit","unit"),
+                                                    help="e.g. carton, bag, crate, bottle")
+                        new_sub     = f2.text_input("Sub Unit",   value=row.get("sub_unit","unit"),
+                                                    help="e.g. piece, kg, bottle, sachet")
+                        new_sub_price = f1.number_input(
+                            f"Selling Price per sub unit",
+                            value=safe_float(row.get("selling_price_sub", 0)),
+                            min_value=0.0, step=50.0,
+                            help="Leave 0 if you don't sell in sub units",
+                        ) if new_upp > 1 else 0.0
                         save = st.form_submit_button("💾 Save Changes", type="primary")
 
                     if save:
                         ok = db_update(TBL_PRODUCTS, "product_id", row["product_id"], {
-                            "product_name": new_name, "category": new_cat,
-                            "cost_price": new_cost, "selling_price": new_sell,
-                            "reorder_level": new_reorder,
+                            "product_name":      new_name,
+                            "category":          new_cat,
+                            "cost_price":        new_cost,
+                            "selling_price":     new_sell,
+                            "reorder_level":     new_reorder,
+                            "units_per_pack":    new_upp,
+                            "base_unit":         new_base.strip() or "unit",
+                            "sub_unit":          new_sub.strip()  or "unit",
+                            "selling_price_sub": new_sub_price,
                         })
                         (st.success("Product updated!") if ok else st.error("Update failed."))
                         st.rerun()
@@ -209,19 +244,44 @@ def page_products():
         with st.form("add_product_form", clear_on_submit=True):
             st.markdown("#### New Product Details")
             f1, f2      = st.columns(2)
-            prod_name   = f1.text_input("Product Name *",      placeholder="e.g. Indomie Chicken 70g")
-            category    = f2.text_input("Category *",          placeholder="e.g. Noodles, Beverages")
-            cost_price  = f1.number_input("Cost Price (₦) *",    min_value=0.0, step=50.0,
-                                          help="What you paid per unit")
-            sell_price  = f2.number_input("Selling Price (₦) *", min_value=0.0, step=50.0,
-                                          help="What the customer pays")
-            stock_qty   = f1.number_input("Opening Stock *",    min_value=0, step=1)
-            reorder_lvl = f2.number_input("Reorder Level *",    min_value=0, step=1)
+            prod_name   = f1.text_input("Product Name *",   placeholder="e.g. Indomie Chicken 70g")
+            category    = f2.text_input("Category *",       placeholder="e.g. Noodles, Beverages")
+            cost_price  = f1.number_input("Cost Price (₦) *",  min_value=0.0, step=50.0,
+                                          help="What you paid per unit/pack")
+            stock_qty   = f2.number_input("Opening Stock *",   min_value=0, step=1,
+                                          help="Enter in base units e.g. number of cartons")
+            reorder_lvl = f1.number_input("Reorder Level *",   min_value=0, step=1)
+
+            st.markdown("##### Unit & Pricing Setup")
+            st.caption("Leave Units per Pack as 1 if this product is not sold in smaller units.")
+            u1, u2, u3  = st.columns(3)
+            base_unit   = u1.text_input("Base Unit *",  value="unit",
+                                        help="How stock is counted e.g. carton, bag, crate")
+            sub_unit    = u2.text_input("Sub Unit",     value="unit",
+                                        help="Smallest sellable unit e.g. piece, bottle, kg")
+            units_per_pack = u3.number_input("Units per Pack", min_value=1, step=1, value=1,
+                                             help="How many sub units in one base unit")
+
+            p1, p2      = st.columns(2)
+            sell_price  = p1.number_input(
+                f"Selling Price per base unit (₦) *",
+                min_value=0.0, step=50.0,
+                help="Price when selling a full carton/bag/crate"
+            )
+            sell_price_sub = p2.number_input(
+                f"Selling Price per sub unit (₦)",
+                min_value=0.0, step=50.0,
+                help="Price per piece/bottle/kg. Leave 0 if not applicable",
+            ) if units_per_pack > 1 else 0.0
 
             if cost_price > 0 and sell_price > 0:
                 margin     = sell_price - cost_price
                 margin_pct = (margin / sell_price) * 100
-                st.info(f"💡 Profit margin: **{fmt_naira(margin)}** per unit ({margin_pct:.1f}%)")
+                st.info(
+                    f"💡 Margin per {base_unit}: **{fmt_naira(margin)}** ({margin_pct:.1f}%)"
+                    + (f"  |  Per {sub_unit}: **{fmt_naira(sell_price_sub - cost_price/units_per_pack):.0f}**"
+                       if units_per_pack > 1 and sell_price_sub > 0 else "")
+                )
 
             submitted = st.form_submit_button("➕ Add Product", use_container_width=True, type="primary")
 
@@ -230,15 +290,19 @@ def page_products():
                 st.error("Please fill all required fields and ensure selling price > 0.")
             else:
                 ok = db_insert(TBL_PRODUCTS, {
-                    "product_id":     gen_id("PRD"),
-                    "business_id":    business_id,
-                    "product_name":   prod_name.strip(),
-                    "category":       category.strip(),
-                    "cost_price":     cost_price,
-                    "selling_price":  sell_price,
-                    "stock_quantity": stock_qty,
-                    "reorder_level":  reorder_lvl,
-                    "created_at":     datetime.now().isoformat(),
+                    "product_id":        gen_id("PRD"),
+                    "business_id":       business_id,
+                    "product_name":      prod_name.strip(),
+                    "category":          category.strip(),
+                    "cost_price":        cost_price,
+                    "selling_price":     sell_price,
+                    "selling_price_sub": sell_price_sub,
+                    "stock_quantity":    stock_qty,
+                    "reorder_level":     reorder_lvl,
+                    "base_unit":         base_unit.strip() or "unit",
+                    "sub_unit":          sub_unit.strip()  or "unit",
+                    "units_per_pack":    units_per_pack,
+                    "created_at":        datetime.now().isoformat(),
                 })
                 if ok:
                     st.success(f"✅ '{prod_name}' added to your inventory!")
@@ -329,4 +393,4 @@ def page_products():
                     "recorded_by":  "Recorded By",
                 }),
                 use_container_width=True,
-            )
+                  )
