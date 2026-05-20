@@ -304,7 +304,7 @@ def page_forgot_password():
                     })
                     st.success(
                         "✅ Reset request submitted. Your admin will provide a temporary "
-                        "password — check back in a few hours."
+                        "password to complete your Reset shortly."
                     )
                 else:
                     st.info("If that email is registered, a reset request has been submitted.")
@@ -326,7 +326,7 @@ def page_force_password_change():
   <div style="font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:#F0F4F8;">
     Set a new password</div>
   <div style="font-size:0.85rem;color:#4A6080;margin-top:0.3rem;">
-    Your password was reset by an admin. Please choose a new one before continuing.</div>
+    🔐Your password reset is being processed safely. Please choose a new one before continuing.</div>
 </div>
         """, unsafe_allow_html=True)
         with st.form("force_pw_form"):
