@@ -21,7 +21,7 @@ import pandas as pd
 import streamlit as st
 
 from shared.db import (
-    get_products_df, get_sales_df, get_expenses_df,
+    get_products_df, get_products_df_live, get_sales_df, get_expenses_df,
     compute_insights,
     db_fetch, db_insert, db_update, db_delete,
     TBL_PRODUCTS, TBL_RESTOCK,
@@ -48,7 +48,7 @@ def page_products():
     # Tab 1 — All Products
     # ══════════════════════════════════════
     with tab1:
-        products_df = get_products_df(business_id)
+        products_df = get_products_df_live(business_id)  # always live in inventory
         if products_df.empty:
             st.info("No products yet. Add your first product in the 'Add Product' tab.")
         else:
@@ -376,7 +376,7 @@ def page_products():
     # Tab 3 — Restock
     # ══════════════════════════════════════
     with tab3:
-        products_df = get_products_df(business_id)
+        products_df = get_products_df_live(business_id)  # live for restock
         if products_df.empty:
             st.info("No products found. Add products first.")
         else:
@@ -578,4 +578,4 @@ def page_products():
                     "recorded_by":  "Recorded By",
                 }),
                 use_container_width=True,
-      )
+                  )
