@@ -128,47 +128,74 @@ def page_products():
                                     unsafe_allow_html=True)
 
                     with st.form(f"edit_{row['product_id']}"):
-                        st.markdown("**Edit Product**")
-                        f1, f2      = st.columns(2)
-                        new_name    = f1.text_input("Product Name",    value=row["product_name"])
-                        new_cat     = f2.text_input("Category",        value=row["category"])
-                        new_cost    = f1.number_input("Cost Price",    value=safe_float(row["cost_price"]),
-                                                      min_value=0.0, step=50.0)
-                        new_sell    = f2.number_input(
-                            f"Selling Price (per {row.get('base_unit','unit')})",
+                        # ── Basic Info ──
+                        st.markdown("**🏷️ Basic Information**")
+                        ef1, ef2    = st.columns(2)
+                        new_name    = ef1.text_input("Product Name", value=row["product_name"])
+                        new_cat     = ef2.text_input("Category",     value=row["category"])
+                        ef3, ef4    = st.columns(2)
+                        new_cost    = ef3.number_input("Cost Price (₦)", value=safe_float(row["cost_price"]),
+                                                       min_value=0.0, step=50.0)
+                        new_reorder = ef4.number_input("Reorder Level",  value=safe_int(row["reorder_level"]),
+                                                       min_value=0, step=1)
+
+                        st.markdown("---")
+
+                        # ── Pack Section ──
+                        st.markdown("**📦 Pack Details**")
+                        pp1, pp2, pp3 = st.columns(3)
+                        new_base    = pp1.text_input("Pack Unit",
+                                                     value=row.get("base_unit","unit") or "unit",
+                                                     help="e.g. carton, bag, crate")
+                        new_upp     = pp2.number_input("Units per Pack",
+                                                       value=safe_int(row.get("units_per_pack",1)) or 1,
+                                                       min_value=1, step=1)
+                        new_sell    = st.number_input(
+                            f"Selling Price per Pack — {row.get('base_unit','unit')} (₦)",
                             value=safe_float(row["selling_price"]), min_value=0.0, step=50.0,
                         )
-                        new_reorder = f1.number_input("Reorder Level", value=safe_int(row["reorder_level"]),
-                                                      min_value=0, step=1)
-                        new_upp     = f2.number_input(
-                            "Units per Pack (1 = no splitting)",
-                            value=safe_int(row.get("units_per_pack", 1)), min_value=1, step=1,
-                        )
-                        new_base    = f1.text_input("Base Unit",  value=row.get("base_unit","unit"),
-                                                    help="e.g. carton, bag, crate, bottle")
-                        new_sub     = f2.text_input("Sub Unit",   value=row.get("sub_unit","unit"),
-                                                    help="e.g. piece, kg, bottle, sachet")
-                        new_sub_price = f1.number_input(
-                            f"Selling Price per sub unit",
-                            value=safe_float(row.get("selling_price_sub", 0)),
+                        if new_cost > 0 and new_sell > 0:
+                            pm = new_sell - new_cost
+                            st.caption(f"Pack margin: {fmt_naira(pm)} ({pm/new_sell*100:.1f}%)")
+
+                        st.markdown("---")
+
+                        # ── Unit Section ──
+                        st.markdown("**🔢 Unit Details**")
+                        new_sub     = st.text_input("Unit Name",
+                                                    value=row.get("sub_unit","unit") or "unit",
+                                                    help="e.g. piece, bottle, kg, sachet")
+                        suggested   = round(new_sell / new_upp, 2) if new_upp > 1 and new_sell > 0 else new_sell
+                        new_sub_price = st.number_input(
+                            f"Selling Price per Unit — {row.get('sub_unit','unit')} (₦)",
+                            value=safe_float(row.get("selling_price_sub", suggested)),
                             min_value=0.0, step=50.0,
-                            help="Leave 0 if you don't sell in sub units",
-                        ) if new_upp > 1 else 0.0
-                        save = st.form_submit_button("💾 Save Changes", type="primary")
+                            help=f"Suggested: {fmt_naira(suggested)} (pack ÷ {new_upp})" if new_upp > 1 else "",
+                        )
+                        if new_upp > 1 and new_sub_price > 0 and new_cost > 0:
+                            um = new_sub_price - (new_cost / new_upp)
+                            st.caption(
+                                f"Unit margin: {fmt_naira(um)} | "
+                                f"Selling all {new_upp} units = {fmt_naira(new_sub_price * new_upp)} "
+                                f"vs pack {fmt_naira(new_sell)}"
+                            )
+
+                        save = st.form_submit_button("💾 Save Changes", type="primary",
+                                                     use_container_width=True)
 
                     if save:
                         ok = db_update(TBL_PRODUCTS, "product_id", row["product_id"], {
-                            "product_name":      new_name,
-                            "category":          new_cat,
+                            "product_name":      new_name.strip(),
+                            "category":          new_cat.strip(),
                             "cost_price":        new_cost,
                             "selling_price":     new_sell,
                             "reorder_level":     new_reorder,
-                            "units_per_pack":    new_upp,
+                            "units_per_pack":    int(new_upp),
                             "base_unit":         new_base.strip() or "unit",
                             "sub_unit":          new_sub.strip()  or "unit",
                             "selling_price_sub": new_sub_price,
                         })
-                        (st.success("Product updated!") if ok else st.error("Update failed."))
+                        (st.success("✅ Product updated!") if ok else st.error("❌ Update failed."))
                         st.rerun()
 
                     confirm_key = f"confirm_del_{row['product_id']}"
@@ -242,51 +269,82 @@ def page_products():
     # ══════════════════════════════════════
     with tab2:
         with st.form("add_product_form", clear_on_submit=True):
-            st.markdown("#### New Product Details")
+
+            # ── Basic Info ───────────────────────────────────────
+            st.markdown("#### 🏷️ Basic Information")
             f1, f2      = st.columns(2)
-            prod_name   = f1.text_input("Product Name *",   placeholder="e.g. Indomie Chicken 70g")
-            category    = f2.text_input("Category *",       placeholder="e.g. Noodles, Beverages")
-            cost_price  = f1.number_input("Cost Price (₦) *",  min_value=0.0, step=50.0,
-                                          help="What you paid per unit/pack")
-            stock_qty   = f2.number_input("Opening Stock *",   min_value=0, step=1,
-                                          help="Enter in base units e.g. number of cartons")
-            reorder_lvl = f1.number_input("Reorder Level *",   min_value=0, step=1)
+            prod_name   = f1.text_input("Product Name *", placeholder="e.g. Coca-Cola")
+            category    = f2.text_input("Category *",     placeholder="e.g. Beverages")
+            f3, f4      = st.columns(2)
+            cost_price  = f3.number_input("Cost Price (₦) *", min_value=0.0, step=50.0,
+                                          help="What you paid per pack/unit when buying")
+            reorder_lvl = f4.number_input("Reorder Level *",  min_value=0, step=1,
+                                          help="Alert me when stock falls to this level")
 
-            st.markdown("##### Unit & Pricing Setup")
-            st.caption("Leave Units per Pack as 1 if this product is not sold in smaller units.")
-            u1, u2, u3  = st.columns(3)
-            base_unit   = u1.text_input("Base Unit *",  value="unit",
-                                        help="How stock is counted e.g. carton, bag, crate")
-            sub_unit    = u2.text_input("Sub Unit",     value="unit",
-                                        help="Smallest sellable unit e.g. piece, bottle, kg")
-            units_per_pack = u3.number_input("Units per Pack", min_value=1, step=1, value=1,
-                                             help="How many sub units in one base unit")
+            st.markdown("---")
 
-            p1, p2      = st.columns(2)
-            sell_price  = p1.number_input(
-                f"Selling Price per base unit (₦) *",
+            # ── Pack Section ─────────────────────────────────────
+            st.markdown("#### 📦 Pack (Bulk) Details")
+            st.caption("This is how you BUY the product — e.g. by carton, bag, crate.")
+            p1, p2, p3  = st.columns(3)
+            base_unit      = p1.text_input("Pack Unit *", value="unit",
+                                           help="e.g. carton, bag, crate, dozen")
+            units_per_pack = p2.number_input("Units per Pack *", min_value=1, step=1, value=1,
+                                             help="How many pieces/bottles/kg in one pack")
+            stock_qty      = p3.number_input("Opening Stock *", min_value=0, step=1,
+                                             help="How many packs you currently have")
+            sell_price     = st.number_input(
+                "Selling Price per Pack (₦) *",
                 min_value=0.0, step=50.0,
-                help="Price when selling a full carton/bag/crate"
+                help="Price charged when selling a full pack/carton/bag",
             )
-            sell_price_sub = p2.number_input(
-                f"Selling Price per sub unit (₦)",
-                min_value=0.0, step=50.0,
-                help="Price per piece/bottle/kg. Leave 0 if not applicable",
-            ) if units_per_pack > 1 else 0.0
-
             if cost_price > 0 and sell_price > 0:
-                margin     = sell_price - cost_price
-                margin_pct = (margin / sell_price) * 100
-                st.info(
-                    f"💡 Margin per {base_unit}: **{fmt_naira(margin)}** ({margin_pct:.1f}%)"
-                    + (f"  |  Per {sub_unit}: **{fmt_naira(sell_price_sub - cost_price/units_per_pack):.0f}**"
-                       if units_per_pack > 1 and sell_price_sub > 0 else "")
+                pack_margin     = sell_price - cost_price
+                pack_margin_pct = (pack_margin / sell_price) * 100
+                color = "green" if pack_margin >= 0 else "red"
+                st.markdown(
+                    f"💡 Pack margin: **{fmt_naira(pack_margin)}** ({pack_margin_pct:.1f}%)",
+                )
+
+            st.markdown("---")
+
+            # ── Unit Section ─────────────────────────────────────
+            st.markdown("#### 🔢 Unit (Individual) Details")
+            st.caption(
+                "This is how you SELL individually — e.g. per piece, bottle, kg. "
+                "If you only sell in packs, leave Units per Pack as 1 above and set "
+                "selling price per unit same as pack price."
+            )
+            sub_unit       = st.text_input("Unit Name *", value="unit",
+                                           help="e.g. piece, bottle, sachet, kg")
+
+            # Suggest unit price based on pack price ÷ units_per_pack
+            suggested_unit_price = round(sell_price / units_per_pack, 2) if (
+                units_per_pack > 1 and sell_price > 0
+            ) else sell_price
+            sell_price_sub = st.number_input(
+                "Selling Price per Unit (₦) *",
+                min_value=0.0, step=50.0,
+                value=float(suggested_unit_price),
+                help=(
+                    f"Suggested: {fmt_naira(suggested_unit_price)} (pack price ÷ {units_per_pack}). "
+                    f"You can set higher for unit-sale profit."
+                ) if units_per_pack > 1 else "Price per individual item",
+            )
+            if units_per_pack > 1 and sell_price_sub > 0 and cost_price > 0:
+                unit_cost   = cost_price / units_per_pack
+                unit_margin = sell_price_sub - unit_cost
+                unit_margin_pct = (unit_margin / sell_price_sub * 100) if sell_price_sub else 0
+                st.markdown(
+                    f"💡 Unit margin: **{fmt_naira(unit_margin)}** ({unit_margin_pct:.1f}%) "
+                    f"| Selling {units_per_pack} units = **{fmt_naira(sell_price_sub * units_per_pack)}** "
+                    f"vs pack price **{fmt_naira(sell_price)}**"
                 )
 
             submitted = st.form_submit_button("➕ Add Product", use_container_width=True, type="primary")
 
         if submitted:
-            if not all([prod_name, category]) or sell_price <= 0:
+            if not all([prod_name.strip(), category.strip()]) or sell_price <= 0:
                 st.error("Please fill all required fields and ensure selling price > 0.")
             else:
                 ok = db_insert(TBL_PRODUCTS, {
@@ -301,11 +359,15 @@ def page_products():
                     "reorder_level":     reorder_lvl,
                     "base_unit":         base_unit.strip() or "unit",
                     "sub_unit":          sub_unit.strip()  or "unit",
-                    "units_per_pack":    units_per_pack,
+                    "units_per_pack":    int(units_per_pack),
                     "created_at":        datetime.now().isoformat(),
                 })
                 if ok:
-                    st.success(f"✅ '{prod_name}' added to your inventory!")
+                    st.success(
+                        f"✅ '{prod_name}' added! "
+                        f"Pack: {fmt_naira(sell_price)} per {base_unit} | "
+                        f"Unit: {fmt_naira(sell_price_sub)} per {sub_unit}"
+                    )
                     st.rerun()
                 else:
                     st.error("Failed to add product. Please try again.")
@@ -318,41 +380,164 @@ def page_products():
         if products_df.empty:
             st.info("No products found. Add products first.")
         else:
-            st.markdown("#### Add Stock to Existing Product")
+            st.markdown("#### 🔄 Restock a Product")
+
+            # Product selector outside form for reactive reference card
+            product_options = {
+                f"{r['product_name']} ({r.get('base_unit','unit')}s)": r
+                for _, r in products_df.iterrows()
+            }
+            selected_label   = st.selectbox("Select product to restock",
+                                            list(product_options.keys()))
+            selected_product = product_options[selected_label]
+
+            cur_cost      = safe_float(selected_product["cost_price"])
+            cur_sell_pack = safe_float(selected_product["selling_price"])
+            cur_sell_unit = safe_float(selected_product.get("selling_price_sub", 0))
+            cur_stock     = safe_float(selected_product["stock_quantity"])
+            base_unit     = selected_product.get("base_unit", "unit") or "unit"
+            sub_unit      = selected_product.get("sub_unit",  "unit") or "unit"
+            upp           = safe_int(selected_product.get("units_per_pack", 1)) or 1
+
+            # Current prices reference card
+            stock_str = (
+                f"{cur_stock:.0f} {base_unit}s ({cur_stock * upp:.0f} {sub_unit}s)"
+                if upp > 1 else f"{cur_stock:.0f} {base_unit}s"
+            )
+            c1, c2, c3, c4 = st.columns(4)
+            with c1:
+                st.metric("Cost Price", fmt_naira(cur_cost), help=f"Per {base_unit}")
+            with c2:
+                st.metric("Sell / Pack", fmt_naira(cur_sell_pack), help=f"Per {base_unit}")
+            with c3:
+                st.metric("Sell / Unit", fmt_naira(cur_sell_unit), help=f"Per {sub_unit}")
+            with c4:
+                st.metric("Current Stock", stock_str)
+
+            st.markdown("---")
+
+            # ── Delivery fields (outside form for reactivity) ──
+            st.markdown("**📥 New Delivery**")
+            rd1, rd2 = st.columns(2)
+            add_qty      = rd1.number_input(
+                f"Packs Received ({base_unit}s) *",
+                min_value=1, step=1, value=10,
+                key="restock_add_qty",
+                help=f"Number of {base_unit}s received from supplier",
+            )
+            restock_note = rd2.text_input(
+                "Supplier / Note",
+                placeholder="e.g. Alhaji Musa delivery",
+                key="restock_note",
+            )
+
+            st.markdown("---")
+
+            # ── Price update (outside form so checkbox reacts immediately) ──
+            st.markdown("**💰 Update Prices**")
+            update_prices = st.checkbox(
+                "Supplier prices have changed — update now",
+                value=False,
+                key="restock_update_prices",
+                help="Tick this if cost or selling prices changed with this delivery",
+            )
+
+            if update_prices:
+                st.caption("Pre-filled with current prices. Edit only what changed.")
+
+                new_cost = st.number_input(
+                    f"New Cost Price per {base_unit} (₦)",
+                    min_value=0.0, step=50.0, value=float(cur_cost),
+                    key="restock_new_cost",
+                )
+                if new_cost != cur_cost and cur_cost > 0:
+                    diff = new_cost - cur_cost
+                    pct  = diff / cur_cost * 100
+                    icon = "📈 Cost UP" if diff > 0 else "📉 Cost DOWN"
+                    st.caption(f"{icon} by {fmt_naira(abs(diff))} ({abs(pct):.1f}%)")
+
+                st.markdown("**Pack Selling Price**")
+                new_sell_pack = st.number_input(
+                    f"New Selling Price per {base_unit} (₦)",
+                    min_value=0.0, step=50.0, value=float(cur_sell_pack),
+                    key="restock_new_sell_pack",
+                )
+                if new_cost > 0 and new_sell_pack > 0:
+                    pm = new_sell_pack - new_cost
+                    st.caption(
+                        f"New pack margin: {fmt_naira(pm)} ({pm/new_sell_pack*100:.1f}%)"
+                    )
+
+                st.markdown("**Unit Selling Price**")
+                suggested_unit = round(new_sell_pack / upp, 2) if upp > 1 else new_sell_pack
+                new_sell_unit  = st.number_input(
+                    f"New Selling Price per {sub_unit} (₦)",
+                    min_value=0.0, step=50.0,
+                    value=float(cur_sell_unit) if cur_sell_unit > 0 else float(suggested_unit),
+                    key="restock_new_sell_unit",
+                    help=f"Suggested: {fmt_naira(suggested_unit)}" if upp > 1 else "",
+                )
+                if upp > 1 and new_sell_unit > 0 and new_cost > 0:
+                    um = new_sell_unit - (new_cost / upp)
+                    st.caption(
+                        f"New unit margin: {fmt_naira(um)} | "
+                        f"All {upp} units = {fmt_naira(new_sell_unit * upp)} "
+                        f"vs pack {fmt_naira(new_sell_pack)}"
+                    )
+            else:
+                new_cost      = cur_cost
+                new_sell_pack = cur_sell_pack
+                new_sell_unit = cur_sell_unit
+
+            st.markdown("---")
+
+            # ── Submit button only inside the form ──
             with st.form("restock_form", clear_on_submit=True):
-                product_options = {
-                    f"{r['product_name']} (Current: {int(r['stock_quantity'])} units)": r
-                    for _, r in products_df.iterrows()
-                }
-                selected_label   = st.selectbox("Select product", list(product_options.keys()))
-                selected_product = product_options[selected_label]
-                add_qty          = st.number_input("Units to add", min_value=1, step=1, value=10)
-                restock_note     = st.text_input("Note (optional)",
-                                                 placeholder="e.g. Weekly supplier delivery")
-                submitted        = st.form_submit_button("🔄 Update Stock",
-                                                         use_container_width=True, type="primary")
+                submitted = st.form_submit_button(
+                    "🔄 Confirm Restock", use_container_width=True, type="primary"
+                )
 
             if submitted:
-                new_qty = int(selected_product["stock_quantity"]) + add_qty
-                ok      = db_update(TBL_PRODUCTS, "product_id",
-                                    selected_product["product_id"], {"stock_quantity": new_qty})
+                new_qty = int(round(cur_stock + add_qty))
+                updates = {"stock_quantity": new_qty}
+                if update_prices:
+                    updates["cost_price"]        = new_cost
+                    updates["selling_price"]     = new_sell_pack
+                    updates["selling_price_sub"] = new_sell_unit
+
+                ok = db_update(TBL_PRODUCTS, "product_id",
+                               selected_product["product_id"], updates)
                 if ok:
                     db_insert(TBL_RESTOCK, {
-                        "restock_id":   gen_id("RST"),
-                        "business_id":  business_id,
-                        "product_id":   selected_product["product_id"],
-                        "product_name": selected_product["product_name"],
-                        "qty_added":    add_qty,
-                        "qty_before":   int(selected_product["stock_quantity"]),
-                        "qty_after":    new_qty,
-                        "note":         restock_note.strip() if restock_note else "",
-                        "recorded_by":  user.get("full_name", user.get("email", "")),
-                        "restock_date": datetime.now().isoformat(),
+                        "restock_id":     gen_id("RST"),
+                        "business_id":    business_id,
+                        "product_id":     selected_product["product_id"],
+                        "product_name":   selected_product["product_name"],
+                        "qty_added":      add_qty,
+                        "qty_before":     cur_stock,
+                        "qty_after":      new_qty,
+                        "note":           restock_note.strip() if restock_note else "",
+                        "recorded_by":    user.get("full_name", user.get("email", "")),
+                        "restock_date":   datetime.now().isoformat(),
+                        "old_cost_price": cur_cost,
+                        "new_cost_price": new_cost      if update_prices else None,
+                        "old_sell_pack":  cur_sell_pack,
+                        "new_sell_pack":  new_sell_pack if update_prices else None,
+                        "old_sell_unit":  cur_sell_unit,
+                        "new_sell_unit":  new_sell_unit if update_prices else None,
+                        "prices_updated": update_prices,
                     })
-                    st.success(
-                        f"✅ Stock updated! {selected_product['product_name']}: "
-                        f"{int(selected_product['stock_quantity'])} → {new_qty} units"
+                    msg = (
+                        f"✅ Restocked! {selected_product['product_name']}: "
+                        f"{cur_stock:.0f} → {new_qty:.0f} {base_unit}s"
                     )
+                    if update_prices:
+                        msg += (
+                            f" | Prices updated — Cost: {fmt_naira(new_cost)}, "
+                            f"Pack: {fmt_naira(new_sell_pack)}, "
+                            f"Unit: {fmt_naira(new_sell_unit)}"
+                        )
+                    st.success(msg)
                     st.rerun()
                 else:
                     st.error("Failed to update stock.")
@@ -393,4 +578,4 @@ def page_products():
                     "recorded_by":  "Recorded By",
                 }),
                 use_container_width=True,
-                  )
+      )

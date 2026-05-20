@@ -674,7 +674,7 @@ def page_admin():
                     col1, col2, col3 = st.columns([3,2,2])
                     with col1:
                         st.markdown(f"**{u['business_name']}** — {u['full_name']}")
-                        st.caption(f"📧 {u['email']} | Plan: {u['plan_type']} | Signed up: {u['created_at']}")
+                        st.caption(f"📧 {u['email']} | 📱 {u.get('phone','—')} | Plan: {u['plan_type']} | Signed up: {u['created_at']}")
                     with col2:
                         plan   = u["plan_type"]
                         days   = 30 if plan == "monthly" else 365
@@ -717,7 +717,7 @@ def page_admin():
                 col1, col2, col3 = st.columns([3,2,2])
                 with col1:
                     st.markdown(f"**{u['business_name']}** — {u['full_name']}")
-                    st.caption(f"📧 {u['email']} | {u['plan_type']} | Expires: {u.get('subscription_end','?')}")
+                    st.caption(f"📧 {u['email']} | 📱 {u.get('phone','—')} | {u['plan_type']} | Expires: {u.get('subscription_end','?')}")
                 with col2:
                     ext_days  = 365 if u.get("plan_type") == "yearly" else 30
                     ext_label = "1 year" if ext_days == 365 else "30 days"
@@ -826,13 +826,14 @@ def page_admin():
     # ── All Users ──
     with tab6:
         section_header("👥 All Registered Users")
-        display_cols = [c for c in ["business_name","full_name","email","plan_type",
+        display_cols = [c for c in ["business_name","full_name","email","phone","plan_type",
                                     "plan_status","subscription_end","created_at"]
                         if c in users_df.columns]
         st.dataframe(users_df[display_cols].rename(columns={
             "business_name":   "Business",
             "full_name":       "Name",
             "email":           "Email",
+            "phone":           "Phone",
             "plan_type":       "Plan",
             "plan_status":     "Status",
             "subscription_end":"Expires",
@@ -849,7 +850,7 @@ def page_admin():
                 col1, col2 = st.columns([3,2])
                 with col1:
                     st.markdown(f"**{u['business_name']}** — {u['email']}")
-                    st.caption(f"Plan: {u['plan_type']} | Expired: {u.get('subscription_end','?')}")
+                    st.caption(f"📧 {u['email']} | 📱 {u.get('phone','—')} | Plan: {u['plan_type']} | Expired: {u.get('subscription_end','?')}")
                 with col2:
                     plan   = u.get("plan_type","monthly")
                     days   = 365 if plan == "yearly" else 30

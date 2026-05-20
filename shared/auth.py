@@ -161,7 +161,7 @@ def login_user(email: str, password: str):
 # SIGNUP
 # ══════════════════════════════════════════════════════════════════════════════
 
-def signup_user(business_name, full_name, email, password, plan_type):
+def signup_user(business_name, full_name, email, phone, password, plan_type):
     """
     Create a new user account. Returns (success, message).
     Trial → active immediately. Paid plans → pending_payment.
@@ -192,6 +192,7 @@ def signup_user(business_name, full_name, email, password, plan_type):
         "business_name":            business_name,
         "full_name":                full_name,
         "email":                    email,
+        "phone":                    phone,
         "password_hash":            hash_password(password),
         "role":                     "owner",
         "plan_type":                plan_type,
@@ -267,7 +268,7 @@ def _page_pending_payment(user: dict):
                     unsafe_allow_html=True)
         st.markdown(
             "<div style='text-align:center;font-size:1.4rem;font-weight:800;"
-            "color:#10B981;margin-bottom:0.25rem;'>Account created!</div>",
+            "color:#F0F4F8;margin-bottom:0.25rem;'>Account created!</div>",
             unsafe_allow_html=True)
         st.markdown(
             "<div style='text-align:center;color:#8BA0B8;font-size:0.9rem;"
@@ -285,16 +286,15 @@ def _page_pending_payment(user: dict):
                 st.markdown(f"**₦{amount:,}**")
                 st.markdown(f"`{email}`")
 
-        st.caption("🔒 Make secure payment via Card/Bank Transfer. Activated within 24 hours.")
+        st.caption("🔒 Secure payment via Flutterwave. Activated within 24 hours.")
         st.link_button(
-            f"💳 Pay ₦{amount:,} via Flutterwave 👉→",
-            url=fw_link, width='stretch', type="primary",
+            f"💳 Pay ₦{amount:,} via Flutterwave →",
+            url=fw_link, use_container_width=True, type="primary",
         )
-        st.caption("Already paid? Your account will be activated shortly✅️.")
-        if st.button("← Back and Sign In", width='content', type="primary"):
+        if st.button("← Back to Sign In", use_container_width=True):
             sign_out()
             st.rerun()
-        #st.caption("Already paid? Your account will be activated shortly✅️.")
+        st.caption("Already paid? Your account will be activated shortly.")
 
 
 def _page_expired(user: dict):
@@ -327,6 +327,6 @@ Your access period has ended. Renew to continue using BizTrack.</div>
             url=PAYMENT_DETAILS["flutterwave_yearly"],
             use_container_width=True,
         )
-        if st.button("Sign Out", width='stretch'):
+        if st.button("Sign Out", use_container_width=True):
             sign_out()
             st.rerun()

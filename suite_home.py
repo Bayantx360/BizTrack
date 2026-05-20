@@ -20,7 +20,7 @@ from datetime import datetime
 import streamlit as st
 
 st.set_page_config(
-    page_title="BizTrack Suite",
+    page_title="BizTrack",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -150,9 +150,9 @@ def page_login():
 
         st.markdown("---")
         c1, c2 = st.columns(2)
-        if c1.button("Create account", width='stretch', type="primary"):
+        if c1.button("Create account", use_container_width=True):
             st.session_state.current_page = "signup"; st.rerun()
-        if c2.button("Forgot password?", width='stretch', type="primary"):
+        if c2.button("Forgot password?", use_container_width=True):
             st.session_state.current_page = "forgot_password"; st.rerun()
 
         st.markdown("""
@@ -160,7 +160,7 @@ def page_login():
   <span class="lp-trust-item"><span>🔒</span> Bank-level encryption</span>
   <span class="lp-trust-item"><span>☁️</span> Cloud-backed daily</span>
   <span class="lp-trust-item"><span>📱</span> Works on mobile</span>
-  <span class="lp-trust-item"><span>🏣</span> Built for SMEs</span>
+  <span class="lp-trust-item"><span>🏣</span> Built for all SMEs</span>
 </div>
 
 <div style="
@@ -174,7 +174,7 @@ def page_login():
     NEED HELP? GET IN TOUCH
   </div>
   <div style="display:flex;justify-content:center;gap:1.25rem;flex-wrap:wrap;">
-    <a href="https://wa.me/2348077580631"
+    <a href="https://wa.me/+2348136362633"
        target="_blank"
        style="display:inline-flex;align-items:center;gap:0.4rem;
          background:#0a2a1e;border:1px solid #00C896;
@@ -224,6 +224,7 @@ def page_signup():
         with st.form("signup_form"):
             biz_name  = st.text_input("Business Name *",  placeholder="e.g. Emeka's Supermarket")
             full_name = st.text_input("Your Full Name *",  placeholder="e.g. Emeka Obi")
+            phone     = st.text_input("Phone Number *",    placeholder="e.g. 08012345678")
             email     = st.text_input("Email Address *",   placeholder="you@example.com")
             password  = st.text_input("Password *",        type="password",
                                       placeholder="At least 6 characters")
@@ -242,12 +243,12 @@ def page_signup():
                                            use_container_width=True)
 
         if submit:
-            if not all([biz_name, full_name, email, password]):
+            if not all([biz_name, full_name, phone, email, password]):
                 st.error("Please fill in all required fields.")
             else:
                 with st.spinner("Creating your account…"):
                     ok, msg = signup_user(biz_name.strip(), full_name.strip(),
-                                          email.strip().lower(), password, plan_type)
+                                          email.strip().lower(), phone.strip(), password, plan_type)
                 if ok:
                     if plan_type == "trial":
                         user_obj = get_user_by_email(email.strip().lower())
@@ -303,7 +304,7 @@ def page_forgot_password():
                     })
                     st.success(
                         "✅ Reset request submitted. Your admin will provide a temporary "
-                        "password — check back in a few hours."
+                        "password to complete your Reset shortly."
                     )
                 else:
                     st.info("If that email is registered, a reset request has been submitted.")
@@ -325,7 +326,7 @@ def page_force_password_change():
   <div style="font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:#F0F4F8;">
     Set a new password</div>
   <div style="font-size:0.85rem;color:#4A6080;margin-top:0.3rem;">
-    Your password was reset by an admin. Please choose a new one before continuing.</div>
+    🔐Your password reset is being processed safely. Please choose a new one before continuing.</div>
 </div>
         """, unsafe_allow_html=True)
         with st.form("force_pw_form"):
