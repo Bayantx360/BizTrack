@@ -24,6 +24,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from shared.db import (
+    get_supabase,
     get_sales_df, get_products_df, get_expenses_df,
     compute_kpis,
     db_fetch, db_insert, db_update, db_delete,
@@ -463,23 +464,28 @@ def page_record_sale():
                             "cost_total":   item["cost_total"],
                             "gross_profit": item["gross_profit"],
                         })
-                    # Deduct stock — always in base units using stock_deduct
-                    live_products = get_products_df(business_id)
+                    # Deduct stock — bypass cache to get real-time stock values
+                    st.cache_data.clear()
                     for item in cart:
-                        if not live_products.empty:
-                            pr = live_products[live_products["product_id"] == item["product_id"]]
-                            if not pr.empty:
-                                current   = safe_float(pr.iloc[0]["stock_quantity"])
+                        try:
+                            sb       = get_supabase()
+                            res      = sb.table(TBL_PRODUCTS).select(
+                                "product_id,stock_quantity,units_per_pack"
+                            ).eq("product_id", item["product_id"]).execute()
+                            if res.data:
+                                pr_row    = res.data[0]
+                                current   = safe_float(pr_row["stock_quantity"])
                                 deduct    = safe_float(item.get("stock_deduct", item["quantity"]))
                                 new_stock = round(current - deduct, 4)
-                                # Keep as float only if product has sub-unit splitting
-                                upp = safe_int(pr.iloc[0].get("units_per_pack", 1)) or 1
+                                upp       = safe_int(pr_row.get("units_per_pack", 1)) or 1
                                 if upp <= 1:
                                     new_stock = int(max(0, new_stock))
                                 else:
                                     new_stock = max(0.0, new_stock)
                                 db_update(TBL_PRODUCTS, "product_id", item["product_id"],
                                           {"stock_quantity": new_stock})
+                        except Exception as e:
+                            st.warning(f"⚠️ Stock deduction failed for {item['product_name']}: {e}")
 
                     st.session_state.sale_done = {
                         "sale_id":       sale_id,
