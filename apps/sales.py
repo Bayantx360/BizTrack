@@ -465,14 +465,15 @@ def page_record_sale():
                             "cost_total":   item["cost_total"],
                             "gross_profit": item["gross_profit"],
                         })
-                    # Deduct stock — same proven pattern as old system,
-                    # using business_id filter so RLS policies are always satisfied.
-                    # stock_deduct (not quantity) is used so sub-unit sales
-                    # correctly reduce fractional base-unit stock.
+                    # Deduct stock — using business_id filter so RLS is satisfied.
+                    # stock_deduct handles sub-unit (fractional) sales correctly.
                     live_products = get_products_df_live(business_id)
+                    st.info(f"🔍 DEBUG: fetched {len(live_products)} products for business_id={business_id}")
                     for item in cart:
+                        st.info(f"🔍 DEBUG: processing cart item product_id={item['product_id']} name={item['product_name']}")
                         if not live_products.empty:
                             pr = live_products[live_products["product_id"] == item["product_id"]]
+                            st.info(f"🔍 DEBUG: matched {len(pr)} rows in live_products")
                             if not pr.empty:
                                 current = safe_float(pr.iloc[0]["stock_quantity"])
                                 deduct  = safe_float(item.get("stock_deduct", item["quantity"]))
@@ -482,8 +483,14 @@ def page_record_sale():
                                     new_stock = int(max(0, round(new_stock)))
                                 else:
                                     new_stock = max(0.0, round(new_stock, 4))
-                                db_update(TBL_PRODUCTS, "product_id", item["product_id"],
-                                          {"stock_quantity": new_stock})
+                                st.info(f"🔍 DEBUG: updating stock {current} → {new_stock} (deduct={deduct})")
+                                ok = db_update(TBL_PRODUCTS, "product_id", item["product_id"],
+                                               {"stock_quantity": new_stock})
+                                st.info(f"🔍 DEBUG: db_update returned {ok}")
+                            else:
+                                st.error(f"❌ DEBUG: product_id={item['product_id']} NOT FOUND in live_products. IDs available: {live_products['product_id'].tolist()}")
+                        else:
+                            st.error(f"❌ DEBUG: live_products is EMPTY for business_id={business_id}")
 
                     st.session_state.sale_done = {
                         "sale_id":       sale_id,
