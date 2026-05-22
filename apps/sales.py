@@ -162,23 +162,49 @@ def page_dashboard():
                 st.plotly_chart(fig2, use_container_width=True)
 
         with st.expander("🏆 Top Selling Products", expanded=True):
-            section_header("Top Selling Products (by Revenue)")
-            top_df = (
-                sales_df.groupby("product_name")["total_amount"]
-                .sum().reset_index()
-                .sort_values("total_amount", ascending=True)
-                .tail(8)
-            )
-            if not top_df.empty:
-                fig3 = px.bar(top_df, x="total_amount", y="product_name", orientation="h",
-                              labels={"total_amount": "Revenue (₦)", "product_name": ""},
-                              color_discrete_sequence=["#6366f1"])
-                fig3.update_layout(
-                    margin=dict(l=0, r=0, t=10, b=0),
-                    plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                    xaxis=dict(tickprefix="₦", gridcolor="#1F2D3D"), height=300,
+            # Load sale_items for accurate per-product breakdown
+            # (sales table stores concatenated names for multi-item sales)
+            items_df = db_fetch(TBL_SALE_ITEMS, {"business_id": business_id})
+
+            if not items_df.empty:
+                section_header("Top Selling Products (by Revenue)")
+                top_rev_df = (
+                    items_df.groupby("product_name")["line_total"]
+                    .sum().reset_index()
+                    .sort_values("line_total", ascending=True)
+                    .tail(8)
                 )
-                st.plotly_chart(fig3, use_container_width=True)
+                if not top_rev_df.empty:
+                    fig3 = px.bar(top_rev_df, x="line_total", y="product_name", orientation="h",
+                                  labels={"line_total": "Revenue (₦)", "product_name": ""},
+                                  color_discrete_sequence=["#6366f1"])
+                    fig3.update_layout(
+                        margin=dict(l=0, r=0, t=10, b=0),
+                        plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                        xaxis=dict(tickprefix="₦", gridcolor="#1F2D3D"), height=300,
+                    )
+                    st.plotly_chart(fig3, use_container_width=True)
+
+                section_header("By Quantity Sold")
+                qty_col = "quantity" if "quantity" in items_df.columns else None
+                if qty_col:
+                    top_qty_df = (
+                        items_df.groupby("product_name")[qty_col]
+                        .sum().reset_index()
+                        .sort_values(qty_col, ascending=True)
+                        .tail(8)
+                    )
+                    fig4 = px.bar(top_qty_df, x=qty_col, y="product_name", orientation="h",
+                                  labels={qty_col: "Units Sold", "product_name": ""},
+                                  color_discrete_sequence=["#10b981"])
+                    fig4.update_layout(
+                        margin=dict(l=0, r=0, t=10, b=0),
+                        plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                        xaxis=dict(gridcolor="#1F2D3D"), height=300,
+                    )
+                    st.plotly_chart(fig4, use_container_width=True)
+            else:
+                st.info("No sales data yet for product breakdown.")
     else:
         st.info("📭 No sales yet. Record your first sale to see analytics here.")
 
