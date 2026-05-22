@@ -26,7 +26,7 @@ from shared.db import (
     compute_kpis, compute_insights,
     db_fetch, db_insert, db_update, db_delete,
     get_payments_df, log_payment,
-    TBL_USERS, TBL_EXPENSES, TBL_PAYMENTS,
+    TBL_USERS, TBL_EXPENSES, TBL_PAYMENTS, TBL_SALE_ITEMS,
     PAYMENT_DETAILS,
     gen_id, fmt_naira, safe_float, safe_int, parse_date,
 )
@@ -240,7 +240,8 @@ def page_insights():
         sales_df    = get_sales_df(business_id)
         products_df = get_products_df(business_id)
         expenses_df = get_expenses_df(business_id)
-        insights    = compute_insights(sales_df, products_df, expenses_df)
+        items_df    = db_fetch(TBL_SALE_ITEMS, {"business_id": business_id})
+        insights    = compute_insights(sales_df, products_df, expenses_df, items_df)
         kpis        = compute_kpis(sales_df, expenses_df)
 
     if sales_df.empty:

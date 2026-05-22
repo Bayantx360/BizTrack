@@ -313,11 +313,13 @@ def compute_kpis(sales_df: pd.DataFrame, expenses_df: pd.DataFrame) -> dict:
     return kpis
 
 
-def compute_insights(sales_df, products_df, expenses_df) -> dict:
+def compute_insights(sales_df, products_df, expenses_df, items_df=None) -> dict:
     """
     Return structured insights dict.
     Called by:  pages/health.py  (insights + export tabs)
                 pages/inventory.py (low_stock, stockout_projection)
+    items_df: sale_items DataFrame — used for accurate per-product breakdowns.
+              Falls back to sales_df if not provided.
     """
     insights = {
         "top_products_revenue":  pd.DataFrame(),
@@ -339,21 +341,38 @@ def compute_insights(sales_df, products_df, expenses_df) -> dict:
 
     df = sales_df.dropna(subset=["sale_date"]).copy()
 
-    # Top products by revenue
-    insights["top_products_revenue"] = (
-        df.groupby("product_name")["total_amount"]
-        .sum().reset_index()
-        .sort_values("total_amount", ascending=False)
-        .head(10)
-    )
-
-    # Top products by quantity
-    insights["top_products_qty"] = (
-        df.groupby("product_name")["quantity"]
-        .sum().reset_index()
-        .sort_values("quantity", ascending=False)
-        .head(10)
-    )
+    # Top products — use sale_items for accurate per-product breakdown
+    # (sales table stores concatenated names for multi-item sales)
+    if items_df is not None and not items_df.empty:
+        # Revenue: use line_total per item
+        insights["top_products_revenue"] = (
+            items_df.groupby("product_name")["line_total"]
+            .sum().reset_index()
+            .rename(columns={"line_total": "total_amount"})
+            .sort_values("total_amount", ascending=False)
+            .head(10)
+        )
+        # Quantity: use quantity per item
+        insights["top_products_qty"] = (
+            items_df.groupby("product_name")["quantity"]
+            .sum().reset_index()
+            .sort_values("quantity", ascending=False)
+            .head(10)
+        )
+    else:
+        # Fallback to sales_df if items_df not available
+        insights["top_products_revenue"] = (
+            df.groupby("product_name")["total_amount"]
+            .sum().reset_index()
+            .sort_values("total_amount", ascending=False)
+            .head(10)
+        )
+        insights["top_products_qty"] = (
+            df.groupby("product_name")["quantity"]
+            .sum().reset_index()
+            .sort_values("quantity", ascending=False)
+            .head(10)
+        )
 
     # Daily trend
     df["date"] = df["sale_date"].dt.date
