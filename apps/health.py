@@ -93,7 +93,7 @@ def page_expenses():
                             plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
                             margin=dict(l=0, r=0, t=10, b=0), height=280,
                         )
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, width='stretch')
 
                 # Search
                 exp_search = st.text_input("🔍 Search expenses", key="exp_search",
@@ -203,7 +203,7 @@ def page_expenses():
             ])
             amount       = col1.number_input("Amount (₦) *", min_value=0.0, step=100.0)
             expense_date = col2.date_input("Date", value=datetime.now().date())
-            submitted    = st.form_submit_button("Log Expense", use_container_width=True, type="primary")
+            submitted    = st.form_submit_button("Log Expense", width='stretch', type="primary")
 
         if submitted:
             if not exp_name or amount <= 0:
@@ -402,7 +402,7 @@ display:flex;align-items:center;justify-content:space-between;">
                     bargap=0.2, bargroupgap=0.05,
                 )
                 with st.expander("📈 Monthly Performance Chart", expanded=True):
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
 
                 with st.expander("📋 View monthly breakdown table"):
                     dm = monthly[["month_label","revenue","cost","profit",
@@ -411,7 +411,7 @@ display:flex;align-items:center;justify-content:space-between;">
                                   "Expenses","Net Profit","Transactions"]
                     for col in ["Revenue","Cost","Gross Profit","Expenses","Net Profit"]:
                         dm[col] = dm[col].apply(fmt_naira)
-                    st.dataframe(dm, use_container_width=True, hide_index=True)
+                    st.dataframe(dm, width='stretch', hide_index=True)
 
         # Category performance
         st.markdown("---")
@@ -431,7 +431,7 @@ display:flex;align-items:center;justify-content:space-between;">
                     xaxis=dict(tickprefix="₦", tickformat=",.0f",
                                gridcolor="rgba(255,255,255,0.06)"),
                 )
-                st.plotly_chart(cat_fig, use_container_width=True)
+                st.plotly_chart(cat_fig, width='stretch')
         else:
             st.info("No category data yet.")
 
@@ -455,7 +455,7 @@ display:flex;align-items:center;justify-content:space-between;">
                         margin=dict(l=0, r=0, t=10, b=0), height=350,
                         xaxis=dict(tickprefix="₦"),
                     )
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
 
             with col_r:
                 section_header("By Quantity Sold")
@@ -470,7 +470,7 @@ display:flex;align-items:center;justify-content:space-between;">
                         plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
                         margin=dict(l=0, r=0, t=10, b=0), height=350,
                     )
-                    st.plotly_chart(fig2, use_container_width=True)
+                    st.plotly_chart(fig2, width='stretch')
 
         section_header("⚠️ Slow-Moving Products (Last 30 Days)")
         if not insights["slow_movers"].empty:
@@ -478,7 +478,7 @@ display:flex;align-items:center;justify-content:space-between;">
                 insights["slow_movers"].rename(
                     columns={"product_name":"Product","quantity":"Units Sold (30d)"}
                 ),
-                use_container_width=True,
+                width='stretch',
             )
         else:
             st.markdown('<div class="alert-success">✅ All products are selling at healthy rates.</div>',
@@ -522,7 +522,7 @@ display:flex;align-items:center;justify-content:space-between;">
                     "stockout_date":      "Est. Stockout Date",
                     "urgency":            "Status",
                 }),
-                use_container_width=True,
+                width='stretch',
             )
         else:
             st.info("Not enough sales history to project stockout dates.")
@@ -552,7 +552,7 @@ display:flex;align-items:center;justify-content:space-between;">
                     yaxis=dict(tickprefix="₦", gridcolor="rgba(255,255,255,0.06)"),
                     height=350,
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
 
             if insights["best_day"] and insights["worst_day"]:
                 col1, col2 = st.columns(2)
@@ -580,20 +580,20 @@ display:flex;align-items:center;justify-content:space-between;">
                 st.download_button("⬇️ Download Sales CSV",
                                    data=sales_df.to_csv(index=False).encode("utf-8"),
                                    file_name="sales_export.csv", mime="text/csv",
-                                   use_container_width=True)
+                                   width='stretch')
         with col2:
             products_df = get_products_df(business_id)
             if not products_df.empty:
                 st.download_button("⬇️ Download Products CSV",
                                    data=products_df.to_csv(index=False).encode("utf-8"),
                                    file_name="products_export.csv", mime="text/csv",
-                                   use_container_width=True)
+                                   width='stretch')
         with col3:
             if not expenses_df.empty:
                 st.download_button("⬇️ Download Expenses CSV",
                                    data=expenses_df.to_csv(index=False).encode("utf-8"),
                                    file_name="expenses_export.csv", mime="text/csv",
-                                   use_container_width=True)
+                                   width='stretch')
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -720,18 +720,27 @@ def page_admin():
                     st.markdown(f"**{u['business_name']}** — {u['full_name']}")
                     st.caption(f"📧 {u['email']} | 📱 {u.get('phone','—')} | {u['plan_type']} | Expires: {u.get('subscription_end','?')}")
                 with col2:
-                    ext_days  = 365 if u.get("plan_type") == "yearly" else 30
-                    ext_label = "1 year" if ext_days == 365 else "30 days"
+                    new_plan = st.selectbox(
+                        "Plan", ["monthly", "yearly"],
+                        index=0 if u.get("plan_type","monthly") == "monthly" else 1,
+                        key=f"plan_sel_{u['user_id']}",
+                        label_visibility="collapsed"
+                    )
+                    ext_days   = 365 if new_plan == "yearly" else 30
+                    ext_label  = "1 year" if ext_days == 365 else "30 days"
+                    pay_amount = (PAYMENT_DETAILS["yearly_price"] if new_plan == "yearly"
+                                  else PAYMENT_DETAILS["monthly_price"])
                     if st.button(f"🔁 Renew ({ext_label})", key=f"ext_{u['user_id']}"):
                         curr_end = parse_date(u.get("subscription_end",""))
                         base     = curr_end if (curr_end and curr_end > datetime.now()) else datetime.now()
                         new_end  = (base + timedelta(days=ext_days)).strftime("%Y-%m-%d")
-                        db_update(TBL_USERS, "user_id", u["user_id"], {"subscription_end": new_end})
-                        pay_amount = (PAYMENT_DETAILS["yearly_price"] if ext_days == 365
-                                      else PAYMENT_DETAILS["monthly_price"])
+                        db_update(TBL_USERS, "user_id", u["user_id"], {
+                            "subscription_end": new_end,
+                            "plan_type":        new_plan,
+                        })
                         log_payment(u["user_id"], u["business_name"], u["email"],
-                                    u.get("plan_type","monthly"), pay_amount, "Renewal")
-                        st.success(f"✅ Renewed to {new_end}"); st.rerun()
+                                    new_plan, pay_amount, "Renewal")
+                        st.success(f"✅ Renewed ({new_plan}) to {new_end}"); st.rerun()
                 with col3:
                     if st.button("⛔ Deactivate", key=f"deact_{u['user_id']}"):
                         db_update(TBL_USERS, "user_id", u["user_id"], {"plan_status": "expired"})
@@ -853,17 +862,26 @@ def page_admin():
                     st.markdown(f"**{u['business_name']}** — {u['email']}")
                     st.caption(f"📧 {u['email']} | 📱 {u.get('phone','—')} | Plan: {u['plan_type']} | Expired: {u.get('subscription_end','?')}")
                 with col2:
-                    plan   = u.get("plan_type","monthly")
-                    days   = 365 if plan == "yearly" else 30
-                    end_dt = (datetime.now() + timedelta(days=days)).strftime("%Y-%m-%d")
-                    if st.button("🔁 Reactivate", key=f"react_{u['user_id']}"):
+                    react_plan = st.selectbox(
+                        "Plan", ["monthly", "yearly"],
+                        index=0 if u.get("plan_type","monthly") == "monthly" else 1,
+                        key=f"react_plan_{u['user_id']}",
+                        label_visibility="collapsed"
+                    )
+                    days       = 365 if react_plan == "yearly" else 30
+                    end_dt     = (datetime.now() + timedelta(days=days)).strftime("%Y-%m-%d")
+                    pay_amount = (PAYMENT_DETAILS["yearly_price"] if react_plan == "yearly"
+                                  else PAYMENT_DETAILS["monthly_price"])
+                    react_label = "1 Year" if react_plan == "yearly" else "30 Days"
+                    if st.button(f"🔁 Reactivate ({react_label})", key=f"react_{u['user_id']}"):
                         db_update(TBL_USERS, "user_id", u["user_id"], {
                             "plan_status":        "active",
+                            "plan_type":          react_plan,
                             "subscription_start": datetime.now().strftime("%Y-%m-%d"),
                             "subscription_end":   end_dt,
                         })
                         log_payment(u["user_id"], u["business_name"], u["email"],
-                                    plan, PAYMENT_DETAILS["monthly_price"], "Reactivation")
-                        st.success(f"✅ {u['business_name']} reactivated until {end_dt}")
+                                    react_plan, pay_amount, "Reactivation")
+                        st.success(f"✅ {u['business_name']} reactivated ({react_plan}) until {end_dt}")
                         st.rerun()
                 st.markdown("---")

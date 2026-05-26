@@ -101,7 +101,7 @@ def page_dashboard():
                  positive=(low_count == 0),
                  icon="⚠️" if low_count > 0 else "✅")
         if low_count > 0:
-            if st.button("→ Go to Inventory", key="dash_goto_inv", use_container_width=True):
+            if st.button("→ Go to Inventory", key="dash_goto_inv", width='stretch'):
                 st.session_state.current_page = "inventory"
                 st.rerun()
 
@@ -144,7 +144,7 @@ def page_dashboard():
                            gridcolor="rgba(0,0,0,0)", nticks=10),
                 height=240, bargap=0.25, showlegend=False,
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
             st.caption("■ Gold = above average  ■ Purple = below average")
 
           with col_right:
@@ -159,7 +159,7 @@ def page_dashboard():
                     paper_bgcolor="rgba(0,0,0,0)", height=280,
                     legend=dict(orientation="h", y=-0.1),
                 )
-                st.plotly_chart(fig2, use_container_width=True)
+                st.plotly_chart(fig2, width='stretch')
 
         with st.expander("🏆 Top Selling Products", expanded=True):
             # Load sale_items for accurate per-product breakdown
@@ -183,7 +183,7 @@ def page_dashboard():
                         plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
                         xaxis=dict(tickprefix="₦", gridcolor="#1F2D3D"), height=300,
                     )
-                    st.plotly_chart(fig3, use_container_width=True)
+                    st.plotly_chart(fig3, width='stretch')
 
                 section_header("By Quantity Sold")
                 qty_col = "quantity" if "quantity" in items_df.columns else None
@@ -202,7 +202,7 @@ def page_dashboard():
                         plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
                         xaxis=dict(gridcolor="#1F2D3D"), height=300,
                     )
-                    st.plotly_chart(fig4, use_container_width=True)
+                    st.plotly_chart(fig4, width='stretch')
             else:
                 st.info("No sales data yet for product breakdown.")
     else:
@@ -323,7 +323,7 @@ def page_record_sale():
                 if sel_price > default_price:
                     st.warning(f"⚠️ Above listed price ({fmt_naira(default_price)}). Confirm?")
                 add_btn = st.form_submit_button("➕ Add to Cart", type="primary",
-                                                use_container_width=True)
+                                                width='stretch')
 
             if add_btn:
                 prod_row   = in_stock[in_stock["product_name"] == sel_name].iloc[0]
@@ -446,7 +446,7 @@ def page_record_sale():
                 total_display  = fmt_naira(sum(i["line_total"] for i in st.session_state.cart))
                 confirm_sale   = st.form_submit_button(
                     f"✅ Record Sale — {total_display}",
-                    type="primary", use_container_width=True,
+                    type="primary", width='stretch',
                 )
 
             if confirm_sale:
@@ -529,7 +529,7 @@ def page_record_sale():
                 else:
                     st.error("Failed to record sale. Please try again.")
 
-            if st.button("🗑️ Clear Cart", use_container_width=True):
+            if st.button("🗑️ Clear Cart", width='stretch'):
                 st.session_state.cart      = []
                 st.session_state.sale_done = None
                 st.rerun()
@@ -635,7 +635,7 @@ def page_record_sale():
                          f"{datetime.fromisoformat(rd['sale_time']).strftime('%Y%m%d_%H%M')}.pdf")
                 st.download_button("📄 Download PDF Receipt", data=pdf_bytes,
                                    file_name=fname, mime="application/pdf",
-                                   use_container_width=True, type="primary")
+                                   width='stretch', type="primary")
 
                 item_lines = ", ".join(
                     f"{i['product_name']} x{i['quantity']}" for i in rd["items"]

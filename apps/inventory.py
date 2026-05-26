@@ -181,7 +181,7 @@ def page_products():
                             )
 
                         save = st.form_submit_button("💾 Save Changes", type="primary",
-                                                     use_container_width=True)
+                                                     width='stretch')
 
                     if save:
                         ok = db_update(TBL_PRODUCTS, "product_id", row["product_id"], {
@@ -259,7 +259,7 @@ def page_products():
                     "stockout_date":      "Est. Stockout Date",
                     "urgency":            "Status",
                 }),
-                use_container_width=True,
+                width='stretch',
             )
         else:
             st.info("Not enough sales history to project stockout dates.")
@@ -341,7 +341,7 @@ def page_products():
                     f"vs pack price **{fmt_naira(sell_price)}**"
                 )
 
-            submitted = st.form_submit_button("➕ Add Product", use_container_width=True, type="primary")
+            submitted = st.form_submit_button("➕ Add Product", width='stretch', type="primary")
 
         if submitted:
             if not all([prod_name.strip(), category.strip()]) or sell_price <= 0:
@@ -494,7 +494,7 @@ def page_products():
             # ── Submit button only inside the form ──
             with st.form("restock_form", clear_on_submit=True):
                 submitted = st.form_submit_button(
-                    "🔄 Confirm Restock", use_container_width=True, type="primary"
+                    "🔄 Confirm Restock", width='stretch', type="primary"
                 )
 
             if submitted:
@@ -577,5 +577,5 @@ def page_products():
                     "note":         "Note",
                     "recorded_by":  "Recorded By",
                 }),
-                use_container_width=True,
+                width='stretch',
                   )

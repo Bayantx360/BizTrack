@@ -169,7 +169,7 @@ html, body, [class*="css"], .stApp {
   font-size:1.5rem;
   box-shadow:0 6px 24px rgba(245,166,35,0.4);
 }
-.lp-logo-text { font-family:var(--font-display); font-size:2.2rem; font-weight:800; color:var(--text-primary); letter-spacing:-0.05em; }
+.lp-logo-text { font-family:var(--font-display); font-size:1.6rem; font-weight:800; color:var(--text-primary); letter-spacing:-0.05em; }
 .lp-badge {
   display:inline-flex; align-items:center; gap:0.5rem;
   background:var(--surface); border:1px solid var(--border);

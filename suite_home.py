@@ -11,8 +11,6 @@ Responsibilities:
   4. Route to the correct page module based on session state
   5. Gate every authenticated page behind check_access()
 
-Run with:
-    streamlit run suite_home.py
 """
 
 from datetime import datetime
@@ -20,7 +18,7 @@ from datetime import datetime
 import streamlit as st
 
 st.set_page_config(
-    page_title="BizTrack",
+    page_title="BizTrack-OS",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -89,13 +87,13 @@ def page_login():
 <div class="lp-hero">
   <div class="lp-logo-wrap">
     <div class="lp-logo-icon">📊</div>
-    <div class="lp-logo-text">BizTrack</div>
   </div>
+  <div class="lp-logo-text">BizTrack-OS</div><br>
   <div class="lp-badge"><span>●</span> All-in-one business suite</div>
-  <div class="lp-headline">Run your business<br><span>smarter, not harder</span></div>
+  <div class="lp-headline">Run your business<br><span>smarter, and more efficiently</span></div>
   <div class="lp-sub">
-    Sales · Inventory · Business Health — three powerful apps,
-    one unified platform built for Nigerian entrepreneurs.
+    Sales · Inventory · Business Health — three powerful tool,
+    one unified platform built for Entrepreneurs & Businesses
   </div>
   <div class="lp-value-grid">
     <div class="lp-value-card">
@@ -128,7 +126,7 @@ def page_login():
             email    = st.text_input("Email address", placeholder="you@example.com")
             password = st.text_input("Password", type="password", placeholder="••••••••")
             submit   = st.form_submit_button("Sign In →", type="primary",
-                                             use_container_width=True)
+                                             width='stretch')
         if submit:
             if not email or not password:
                 st.error("Please enter both email and password.")
@@ -150,9 +148,9 @@ def page_login():
 
         st.markdown("---")
         c1, c2 = st.columns(2)
-        if c1.button("Create account", use_container_width=True, type="primary"):
+        if c1.button("Create account", width='stretch', type="primary"):
             st.session_state.current_page = "signup"; st.rerun()
-        if c2.button("Forgot password?", use_container_width=True, type="primary"):
+        if c2.button("Forgot password?", width='stretch', type="primary"):
             st.session_state.current_page = "forgot_password"; st.rerun()
 
         st.markdown("""
@@ -171,7 +169,7 @@ def page_login():
 ">
   <div style="font-size:0.72rem;color:#4A6080;margin-bottom:0.75rem;
     font-family:'DM Mono',monospace;letter-spacing:0.05em;">
-    NEED HELP? GET IN TOUCH
+    Connect With Us
   </div>
   <div style="display:flex;justify-content:center;gap:1.25rem;flex-wrap:wrap;">
     <a href="https://wa.me/+2348136362633"
@@ -202,7 +200,7 @@ def page_login():
     </a>
   </div>
   <div style="margin-top:1.25rem;font-size:0.68rem;color:#2D3F55;">
-    © 2026 BizTrack · All rights reserved
+    © 2026 BizTrack-OS: Powered by Bayantx360 · All rights reserved
   </div>
 </div>
         """, unsafe_allow_html=True)
@@ -222,8 +220,8 @@ def page_signup():
         """, unsafe_allow_html=True)
 
         with st.form("signup_form"):
-            biz_name  = st.text_input("Business Name *",  placeholder="e.g. Emeka's Supermarket")
-            full_name = st.text_input("Your Full Name *",  placeholder="e.g. Emeka Obi")
+            biz_name  = st.text_input("Business Name *",  placeholder="e.g. BigBay Gadget")
+            full_name = st.text_input("Your Full Name *",  placeholder="e.g. Emeka Atanda Salisu")
             phone     = st.text_input("Phone Number *",    placeholder="e.g. 08012345678")
             email     = st.text_input("Email Address *",   placeholder="you@example.com")
             password  = st.text_input("Password *",        type="password",
@@ -240,7 +238,7 @@ def page_signup():
                 horizontal=False,
             )
             submit = st.form_submit_button("Create Account →", type="primary",
-                                           use_container_width=True)
+                                           width='stretch')
 
         if submit:
             if not all([biz_name, full_name, phone, email, password]):
@@ -270,7 +268,7 @@ def page_signup():
                     st.error(msg)
 
         st.markdown("---")
-        if st.button("← Already have an account? Sign in", use_container_width=True):
+        if st.button("← Already have an account? Sign in", width='stretch'):
             st.session_state.current_page = "login"; st.rerun()
 
 
@@ -291,7 +289,7 @@ def page_forgot_password():
         with st.form("forgot_form"):
             email  = st.text_input("Email address", placeholder="you@example.com")
             submit = st.form_submit_button("Request Reset", type="primary",
-                                           use_container_width=True)
+                                           width='stretch')
         if submit:
             if not email:
                 st.error("Please enter your email address.")
@@ -310,7 +308,7 @@ def page_forgot_password():
                     st.info("If that email is registered, a reset request has been submitted.")
 
         st.markdown("---")
-        if st.button("← Back to Sign In", use_container_width=True):
+        if st.button("← Back to Sign In", width='stretch'):
             st.session_state.current_page = "login"; st.rerun()
 
 
@@ -333,7 +331,7 @@ def page_force_password_change():
             new_pw  = st.text_input("New password",     type="password", placeholder="At least 6 characters")
             conf_pw = st.text_input("Confirm password", type="password", placeholder="Repeat new password")
             submit  = st.form_submit_button("Update Password →", type="primary",
-                                            use_container_width=True)
+                                            width='stretch')
         if submit:
             if len(new_pw) < 6:
                 st.error("Password must be at least 6 characters.")
@@ -376,7 +374,7 @@ def render_sidebar():
   ">📊</div>
   <div>
     <div style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;
-      color:#F0F4F8;letter-spacing:-0.03em;line-height:1;">BizTrack</div>
+      color:#F0F4F8;letter-spacing:-0.03em;line-height:1;">BizTrack-OS</div>
     <div style="font-size:0.65rem;color:#4A6080;font-family:'DM Mono',monospace;
       letter-spacing:0.05em;">SUITE</div>
   </div>
@@ -447,7 +445,7 @@ def render_sidebar():
                 btn_clicked = st.button(
                     f"{emoji} {label}",
                     key=f"nav_{page_key}",
-                    use_container_width=True,
+                    width='stretch',
                     type="primary" if is_active else "secondary",
                 )
                 if btn_clicked:
@@ -457,7 +455,7 @@ def render_sidebar():
         # ── Sign out ──
         st.markdown("<div style='margin-top:1.5rem;'></div>", unsafe_allow_html=True)
         st.markdown("---")
-        if st.button("⎋ Sign Out", use_container_width=True):
+        if st.button("⎋ Sign Out", width='stretch'):
             sign_out()
             st.rerun()
 
