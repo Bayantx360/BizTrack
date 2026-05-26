@@ -491,56 +491,55 @@ def page_products():
 
             st.markdown("---")
 
-            # ── Submit button only inside the form ──
+            # ── Submit button inside the form ──
             with st.form("restock_form", clear_on_submit=True):
                 submitted = st.form_submit_button(
                     "🔄 Confirm Restock", width='stretch', type="primary"
                 )
 
-            if submitted:
-                new_qty = int(round(cur_stock + add_qty))
-                updates = {"stock_quantity": new_qty}
-                if update_prices:
-                    updates["cost_price"]        = new_cost
-                    updates["selling_price"]     = new_sell_pack
-                    updates["selling_price_sub"] = new_sell_unit
-
-                ok = db_update(TBL_PRODUCTS, "product_id",
-                               selected_product["product_id"], updates)
-                if ok:
-                    db_insert(TBL_RESTOCK, {
-                        "restock_id":     gen_id("RST"),
-                        "business_id":    business_id,
-                        "product_id":     selected_product["product_id"],
-                        "product_name":   selected_product["product_name"],
-                        "qty_added":      add_qty,
-                        "qty_before":     cur_stock,
-                        "qty_after":      new_qty,
-                        "note":           restock_note.strip() if restock_note else "",
-                        "recorded_by":    user.get("full_name", user.get("email", "")),
-                        "restock_date":   datetime.now().isoformat(),
-                        "old_cost_price": cur_cost,
-                        "new_cost_price": new_cost      if update_prices else None,
-                        "old_sell_pack":  cur_sell_pack,
-                        "new_sell_pack":  new_sell_pack if update_prices else None,
-                        "old_sell_unit":  cur_sell_unit,
-                        "new_sell_unit":  new_sell_unit if update_prices else None,
-                        "prices_updated": update_prices,
-                    })
-                    msg = (
-                        f"✅ Restocked! {selected_product['product_name']}: "
-                        f"{cur_stock:.0f} → {new_qty:.0f} {base_unit}s"
-                    )
+                if submitted:
+                    new_qty = int(round(cur_stock + add_qty))
+                    updates = {"stock_quantity": new_qty}
                     if update_prices:
-                        msg += (
-                            f" | Prices updated — Cost: {fmt_naira(new_cost)}, "
-                            f"Pack: {fmt_naira(new_sell_pack)}, "
-                            f"Unit: {fmt_naira(new_sell_unit)}"
+                        updates["cost_price"]        = new_cost
+                        updates["selling_price"]     = new_sell_pack
+                        updates["selling_price_sub"] = new_sell_unit
+
+                    ok = db_update(TBL_PRODUCTS, "product_id",
+                                   selected_product["product_id"], updates)
+                    if ok:
+                        db_insert(TBL_RESTOCK, {
+                            "restock_id":     gen_id("RST"),
+                            "business_id":    business_id,
+                            "product_id":     selected_product["product_id"],
+                            "product_name":   selected_product["product_name"],
+                            "qty_added":      add_qty,
+                            "qty_before":     cur_stock,
+                            "qty_after":      new_qty,
+                            "note":           restock_note.strip() if restock_note else "",
+                            "recorded_by":    user.get("full_name", user.get("email", "")),
+                            "restock_date":   datetime.now().isoformat(),
+                            "old_cost_price": cur_cost,
+                            "new_cost_price": new_cost      if update_prices else None,
+                            "old_sell_pack":  cur_sell_pack,
+                            "new_sell_pack":  new_sell_pack if update_prices else None,
+                            "old_sell_unit":  cur_sell_unit,
+                            "new_sell_unit":  new_sell_unit if update_prices else None,
+                            "prices_updated": update_prices,
+                        })
+                        msg = (
+                            f"✅ Restocked! {selected_product['product_name']}: "
+                            f"{cur_stock:.0f} → {new_qty:.0f} {base_unit}s"
                         )
-                    st.success(msg)
-                    st.rerun()
-                else:
-                    st.error("Failed to update stock.")
+                        if update_prices:
+                            msg += (
+                                f" | Prices updated — Cost: {fmt_naira(new_cost)}, "
+                                f"Pack: {fmt_naira(new_sell_pack)}, "
+                                f"Unit: {fmt_naira(new_sell_unit)}"
+                            )
+                        st.success(msg)
+                    else:
+                        st.error("Failed to update stock.")
 
     # ══════════════════════════════════════
     # Tab 4 — Restock History
@@ -578,4 +577,4 @@ def page_products():
                     "recorded_by":  "Recorded By",
                 }),
                 width='stretch',
-                  )
+                      )
