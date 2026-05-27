@@ -504,4 +504,41 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # ── Branded splash to mask the initial Streamlit render flash ──
+    if not st.session_state.get("_splash_done"):
+        splash = st.empty()
+        splash.markdown("""
+<style>
+.splash-wrap {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    height: 80vh; gap: 1rem;
+}
+.splash-icon {
+    width: 72px; height: 72px; border-radius: 18px;
+    background: linear-gradient(135deg, #F5A623, #C4831A);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem;
+    box-shadow: 0 8px 32px rgba(245,166,35,0.35);
+}
+.splash-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.8rem; font-weight: 800;
+    color: #F0F4F8; letter-spacing: -0.03em;
+}
+.splash-sub {
+    font-size: 0.8rem; color: #4A6080;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.1em; text-transform: uppercase;
+}
+</style>
+<div class="splash-wrap">
+  <div class="splash-icon">📊</div>
+  <div class="splash-title">BizTrack-OS</div>
+  <div class="splash-sub">Loading your suite…</div>
+</div>
+        """, unsafe_allow_html=True)
+        st.session_state["_splash_done"] = True
+        st.rerun()
+    else:
+        main()
