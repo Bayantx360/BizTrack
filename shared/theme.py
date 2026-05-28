@@ -61,6 +61,35 @@ def apply_suite_css():
   --font-mono:    'DM Mono', monospace;
 }
 
+/* ─────────────────────────────────────────────
+   Streamlit Header & Toolbar
+───────────────────────────────────────────── */
+
+[data-testid="stHeader"] {
+    background: #080B0F !important;
+    border-bottom: 1px solid #1F2D3D !important;
+}
+
+[data-testid="stToolbar"] {
+    background: #080B0F !important;
+}
+
+header {
+    background: #080B0F !important;
+}
+
+div[data-testid="stDecoration"] {
+    background: #080B0F !important;
+}
+
+/* Toolbar Icons */
+[data-testid="stToolbar"] button,
+[data-testid="stToolbar"] svg {
+    color: #F0F4F8 !important;
+    fill: #F0F4F8 !important;
+}
+
+
 /* ── Base ── */
 html, body, [class*="css"], .stApp {
   font-family: var(--font-body);
