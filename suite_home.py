@@ -82,14 +82,20 @@ APP_PAGES = {
 # ══════════════════════════════════════════════════════════════════════════════
 
 @st.cache_data(ttl=300, show_spinner=False)
-def get_business_count() -> int:
-    """Return total number of registered businesses — cached 5 min."""
+def get_business_social_proof():
+    """Return (count, [first 4 business name initials]) — cached 5 min."""
     try:
-        sb  = get_supabase()
-        res = sb.table(TBL_USERS).select("user_id", count="exact").execute()
-        return res.count or 0
+        sb   = get_supabase()
+        res  = sb.table(TBL_USERS).select("business_name", count="exact").execute()
+        count = res.count or 0
+        names = [
+            (r.get("business_name") or "B").strip().upper()[0]
+            for r in (res.data or [])
+            if (r.get("business_name") or "").strip()
+        ]
+        return count, names[:4]
     except Exception:
-        return 0
+        return 0, []
 
 
 def page_login():
@@ -129,19 +135,44 @@ def page_login():
 </div>
     """, unsafe_allow_html=True)
 
-    # ── Social proof counter ──
-    biz_count = get_business_count()
+    # ── Social proof — avatar strip ──
+    biz_count, initials = get_business_social_proof()
     if biz_count > 0:
+        avatar_colors = [
+            ("E8F4FD", "1A6FA8"),
+            ("E8F8F1", "1A7A4A"),
+            ("FEF9E7", "A07A10"),
+            ("FDEDEC", "A83228"),
+        ]
+        avatars_html = ""
+        for i, letter in enumerate(initials):
+            bg, fg = avatar_colors[i % len(avatar_colors)]
+            avatars_html += (
+                f'<div style="width:32px;height:32px;border-radius:50%;'
+                f'background:#{bg};border:2px solid #1a1a2e;'
+                f'display:flex;align-items:center;justify-content:center;'
+                f'font-size:12px;font-weight:500;color:#{fg};'
+                f'margin-right:-8px;position:relative;z-index:{4-i};">'
+                f'{letter}</div>'
+            )
+        extra = biz_count - len(initials)
+        if extra > 0:
+            avatars_html += (
+                f'<div style="width:32px;height:32px;border-radius:50%;'
+                f'background:#2A2A3E;border:2px solid #1a1a2e;'
+                f'display:flex;align-items:center;justify-content:center;'
+                f'font-size:11px;font-weight:500;color:#A0A8C0;'
+                f'margin-right:-8px;">+{extra}</div>'
+            )
+        label = "business" if biz_count == 1 else "businesses"
         st.markdown(f"""
-<div style="
-    text-align: center;
-    padding: 10px 0 4px;
-    font-size: 0.82rem;
-    color: #4A6080;
-    letter-spacing: 0.02em;
-">
-    🏪 <strong style="color:#F5A623;">{biz_count} {'business' if biz_count == 1 else 'businesses'}</strong>
-    already running on BizTrack
+<div style="display:flex;align-items:center;justify-content:center;
+            gap:14px;padding:14px 0 6px;">
+  <div style="display:flex;align-items:center;">{avatars_html}</div>
+  <div style="font-size:13px;color:#7A8499;line-height:1.4;">
+    <strong style="color:#E8EAF0;">{biz_count} {label}</strong>
+    already running their<br>business on BizTrack
+  </div>
 </div>
         """, unsafe_allow_html=True)
 
