@@ -201,7 +201,7 @@ def page_products():
 
                     confirm_key = f"confirm_del_{row['product_id']}"
                     if not st.session_state.get(confirm_key, False):
-                        if st.button(f"🗑️ Delete {row['product_name']}", key=f"del_{row['product_id']}"):
+                        if st.button(f"🗑️ Delete {row['product_name']}", key=f"del_{row['product_id']}", type="secondary"):
                             st.session_state[confirm_key] = True
                             st.rerun()
                     else:
