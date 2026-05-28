@@ -68,6 +68,10 @@ def apply_suite_css():
 [data-testid="stHeader"] {
     background: #080B0F !important;
     border-bottom: 1px solid #1F2D3D !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    padding-top: 0px !important;
+    padding-bottom: 0px !important;
 }
 
 [data-testid="stToolbar"] {
