@@ -169,9 +169,9 @@ def page_login():
 <div style="display:flex;align-items:center;justify-content:center;
             gap:14px;padding:14px 0 6px;">
   <div style="display:flex;align-items:center;">{avatars_html}</div>
-  <div style="font-size:13px;color:#7A8499;line-height:1.4;">
+  <div style="font-size:13px;color:#10B981;line-height:1.4;">
     <strong style="color:#E8EAF0;">{biz_count} {label}</strong>
-    already running their<br>business on BizTrack-OS</strong>
+    already running their<br>business on </strong>BizTrack-OS
   </div>
 </div>
         """, unsafe_allow_html=True)
