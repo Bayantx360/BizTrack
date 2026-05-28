@@ -35,7 +35,7 @@ from shared.auth import (
 from shared.db import (
     db_update, TBL_USERS,
     PAYMENT_DETAILS, validate_email,
-    gen_id,
+    gen_id, get_supabase,
 )
 from shared.theme import apply_suite_css
 
@@ -81,6 +81,17 @@ APP_PAGES = {
 # AUTH PAGES
 # ══════════════════════════════════════════════════════════════════════════════
 
+@st.cache_data(ttl=300, show_spinner=False)
+def get_business_count() -> int:
+    """Return total number of registered businesses — cached 5 min."""
+    try:
+        sb  = get_supabase()
+        res = sb.table(TBL_USERS).select("user_id", count="exact").execute()
+        return res.count or 0
+    except Exception:
+        return 0
+
+
 def page_login():
     apply_suite_css()
     st.markdown("""
@@ -117,6 +128,22 @@ def page_login():
   </div>
 </div>
     """, unsafe_allow_html=True)
+
+    # ── Social proof counter ──
+    biz_count = get_business_count()
+    if biz_count > 0:
+        st.markdown(f"""
+<div style="
+    text-align: center;
+    padding: 10px 0 4px;
+    font-size: 0.82rem;
+    color: #4A6080;
+    letter-spacing: 0.02em;
+">
+    🏪 <strong style="color:#F5A623;">{biz_count} {'business' if biz_count == 1 else 'businesses'}</strong>
+    already running on BizTrack
+</div>
+        """, unsafe_allow_html=True)
 
     _, form_col, _ = st.columns([1, 1.4, 1])
     with form_col:
