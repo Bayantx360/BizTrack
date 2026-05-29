@@ -213,9 +213,9 @@ def page_login():
 
         st.markdown("""
 <div class="lp-trust-strip">
-  <span class="lp-trust-item"><span>🔒</span> Bank-level encryption</span>
-  <span class="lp-trust-item"><span>☁️</span> Cloud-backed daily</span>
-  <span class="lp-trust-item"><span>📱</span> Works on mobile</span>
+  <span class="lp-trust-item"><span>🔒</span> Password secured login</span>
+  <span class="lp-trust-item"><span>☁️</span> Data backed on cloud daily</span>
+  <span class="lp-trust-item"><span>📱</span> Works on mobile phones </span>
   <span class="lp-trust-item"><span>🏣</span> Built for all SMEs</span>
 </div>
 
